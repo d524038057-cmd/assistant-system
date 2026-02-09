@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>助教在线分配系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 1000px;
+            padding: 30px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            position: relative;
+        }
+        
+        h1 {
+            color: #4361ee;
+            margin-bottom: 8px;
+            font-size: 2.2em;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 0.95em;
+            margin-bottom: 15px;
+        }
+        
+        .sync-indicator {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8f9fa;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+        }
+        
+        .sync-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        
+        .sync-dot.connected {
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+        
+        .sync-dot.disconnected {
+            background: #f44336;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .top-bar {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .time-card {
+            background: #4361ee;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .time {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+        
+        .date {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .user-card {
+            background: #4cc9f0;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: white;
+            color: #4cc9f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .mode-card {
+            background: #f72585;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .mode-card.active {
+            background: #7209b7;
+            animation: glow 2s infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px #7209b7; }
+            50% { box-shadow: 0 0 20px #7209b7; }
+        }
+        
+        .main-panel {
+            background: #f8f9fa;
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            margin: 25px 0;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        
+        .main-panel.active {
+            border-color: #4361ee;
+            background: rgba(67, 97, 238, 0.05);
+        }
+        
+        .main-panel.skipping {
+            border-color: #f72585;
+            background: rgba(247, 37, 133, 0.05);
+        }
+        
+        .assistant-display {
+            font-size: 4em;
+            font-weight: bold;
+            color: #212529;
+            margin: 15px 0;
+            padding: 15px 30px;
+            border-radius: 15px;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            min-width: 300px;
+            text-align: center;
+        }
+        
+        .assistant-display.tomorrow-rest {
+            color: #7209b7;
+            border: 3px solid #7209b7;
+        }
+        
+        .assistant-display.selected {
+            color: #4cc9f0;
+            border: 3px solid #4cc9f0;
+        }
+        
+        .status-message {
+            color: #666;
+            margin-top: 15px;
+            font-size: 1.1em;
+            min-height: 24px;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+        
+        .btn {
+            padding: 15px 10px;
+            font-size: 1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-icon {
+            font-size: 1.2em;
+        }
+        
+        .btn-primary {
+            background: #4361ee;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #3a56d4;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(67, 97, 238, 0.3);
+        }
+        
+        .btn-success {
+            background: #4cc9f0;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #36b5d8;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(76, 201, 240, 0.3);
+        }
+        
+        .btn-warning {
+            background: #f72585;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: #e0206c;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(247, 37, 133, 0.3);
+        }
+        
+        .btn-danger {
+            background: #7209b7;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #610882;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(114, 9, 183, 0.3);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #4361ee;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .content-tabs {
+            display: flex;
+            border-bottom: 2px solid #eee;
+            margin-top: 25px;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-weight: bold;
+            color: #666;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .tab.active {
+            color: #4361ee;
+            border-bottom-color: #4361ee;
+        }
+        
+        .tab-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #f72585;
+            color: white;
+            font-size: 0.7em;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px 0;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .history-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        
+        .history-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .history-time {
+            color: #666;
+            font-size: 0.9em;
+            min-width: 80px;
+        }
+        
+        .history-action {
+            flex: 1;
+            margin: 0 15px;
+        }
+        
+        .history-user {
+            background: #f8f9fa;
+            color: #4361ee;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+        }
+        
+        .skip-reason {
+            margin-top: 15px;
+            padding: 12px 15px;
+            border: 2px solid #f72585;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 400px;
+            font-size: 1em;
+            display: none;
+        }
+        
+        .skip-reason:focus {
+            outline: none;
+            border-color: #7209b7;
+        }
+        
+        .assistant-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .assistant-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .assistant-card.available {
+            border-color: #4cc9f0;
+        }
+        
+        .assistant-card.unavailable {
+            border-color: #ccc;
+            opacity: 0.5;
+        }
+        
+        .assistant-card.tomorrow-rest {
+            border-color: #f72585;
+        }
+        
+        .assistant-card.skipped {
+            border-color: #7209b7;
+            text-decoration: line-through;
+        }
+        
+        .assistant-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .assistant-count {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .online-users {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .online-user {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .user-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4CAF50;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal.show {
+            display: flex;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #4361ee;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 1001;
+            animation: slideInRight 0.3s;
+        }
+        
+        .toast.show {
+            display: block;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .top-bar {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 通知 -->
+    <div class="toast" id="toast"></div>
+    
+    <!-- 连接提示 -->
+    <div class="modal" id="connectModal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px; color: #4361ee;">🔄 助教在线分配系统</h2>
+            <p style="margin-bottom: 10px; color: #666;">这是一个简易多用户系统，使用本地存储同步数据。</p>
+            <p style="margin-bottom: 20px; color: #666; font-size: 0.9em;">⚠️ 注意：多用户同步需要在同一网络环境下访问同一页面</p>
+            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 25px;">
+                <button class="btn btn-primary" onclick="startSystem()" style="padding: 10px 20px;">
+                    开始使用
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>📚 助教在线分配系统</h1>
+            <div class="subtitle">简易多用户同步 · 智能时间规则 · 一键分配</div>
+            <div class="sync-indicator">
+                <div class="sync-dot disconnected" id="syncDot"></div>
+                <span id="syncText">本地模式</span>
+            </div>
+        </div>
+        
+        <div class="top-bar">
+            <div class="time-card">
+                <div class="time" id="currentTime">--:--:--</div>
+                <div class="date" id="currentDate">--月--日 星期-</div>
+            </div>
+            
+            <div class="user-card">
+                <div class="user-avatar" id="userAvatar">A</div>
+                <div>
+                    <div id="userName">用户</div>
+                    <div style="font-size: 0.8em; opacity: 0.9;">在线中</div>
+                </div>
+            </div>
+            
+            <div class="mode-card" id="timeMode">
+                <div>🕐 正常分配模式</div>
+            </div>
+        </div>
+        
+        <div class="main-panel" id="mainPanel">
+            <div class="status-message" id="statusMessage">点击"分配助教"按钮开始</div>
+            <div class="assistant-display" id="assistantDisplay">-</div>
+            <input type="text" class="skip-reason" id="skipReason" placeholder="请输入跳过原因（选填）" maxlength="100">
+        </div>
+        
+        <div class="action-buttons">
+            <button class="btn btn-primary" id="assignBtn">
+                <span class="btn-icon">🎯</span>
+                <span>分配助教</span>
+            </button>
+            <button class="btn btn-success" id="confirmBtn" disabled>
+                <span class="btn-icon">✅</span>
+                <span>确认分配</span>
+            </button>
+            <button class="btn btn-warning" id="skipBtn" disabled>
+                <span class="btn-icon">⏸️</span>
+                <span>跳过助教</span>
+            </button>
+            <button class="btn btn-danger" id="cancelBtn" style="display: none;">
+                <span class="btn-icon">❌</span>
+                <span>取消操作</span>
+            </button>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="assignedCount">0</div>
+                <div class="stat-label">今日已分配</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="availableCount">15</div>
+                <div class="stat-label">可用助教</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="skippedCount">0</div>
+                <div class="stat-label">今日跳过</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="fairnessIndex">100%</div>
+                <div class="stat-label">分配公平指数</div>
+            </div>
+        </div>
+        
+        <div class="content-tabs">
+            <div class="tab active" onclick="switchTab('history')">
+                分配记录
+                <span class="tab-badge" id="historyBadge">0</span>
+            </div>
+            <div class="tab" onclick="switchTab('assistants')">助教状态</div>
+            <div class="tab" onclick="switchTab('online')">
+                在线用户
+                <span class="tab-badge" id="onlineBadge">1</span>
+            </div>
+            <div class="tab" onclick="switchTab('settings')">系统设置</div>
+        </div>
+        
+        <div class="tab-content active" id="historyTab">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3>📝 实时分配记录</h3>
+                <button class="btn btn-primary" style="padding: 8px 15px; font-size: 0.9em;" onclick="refreshData()">
+                    🔄 刷新
+                </button>
+            </div>
+            <div class="history-list" id="historyList">
+                <div style="text-align: center; color: #999; padding: 30px;">加载中...</div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="assistantsTab">
+            <h3>👥 助教今日状态</h3>
+            <div class="assistant-grid" id="assistantGrid">
+                加载中...
+            </div>
+        </div>
+        
+        <div class="tab-content" id="onlineTab">
+            <h3>👤 在线用户</h3>
+            <div class="online-users" id="onlineUsers">
+                <div class="online-user">
+                    <div class="user-status"></div>
+                    <span>正在加载...</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="settingsTab">
+            <h3>⚙️ 系统设置</h3>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="resetToday()" style="margin: 10px;">
+                    🔄 重置今日数据
+                </button>
+                <button class="btn btn-warning" onclick="exportData()" style="margin: 10px;">
+                    📥 导出数据
+                </button>
+                <button class="btn btn-danger" onclick="clearAllData()" style="margin: 10px;">
+                    🗑️ 清除所有数据
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 助教休息日数据 ====================
+        const ASSISTANT_REST_DAYS = {
+            "Bella": [3, 4], "Freda": [7, 1], "Niko": [3, 4], "Liana": [1, 2],
+            "Janice": [4, 5], "Carlos": [6, 7], "Olivia": [2, 3], "Eddie": [5, 6],
+            "Celia": [7, 1], "Sara": [5, 6], "Jane": [7, 1], "Roxy": [5, 6],
+            "Sophie": [7, 1], "John": [2, 3], "Iris": [6, 7]
+        };
+
+        // 星期几中文
+        const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
+
+        // ==================== 系统状态 ====================
+        let state = {
+            // 用户信息
+            userId: null,
+            userName: null,
+            userColor: null,
+            
+            // 时间信息
+            today: null,
+            todayWeekday: 1,
+            tomorrowWeekday: 2,
+            isAfter14pm: false,
+            
+            // 数据
+            assignmentHistory: {},
+            todayAssignments: [],
+            todaySkips: [],
+            availableAssistants: [],
+            tomorrowRestAssistants: [],
+            
+            // 当前操作
+            currentAssistant: null,
+            isSelecting: false,
+            isSkipping: false,
+            
+            // 在线用户
+            onlineUsers: {},
+            lastDataCheck: 0
+        };
+
+        // ==================== 初始化系统 ====================
+        function initSystem() {
+            console.log('🚀 初始化助教分配系统...');
+            
+            try {
+                // 1. 初始化用户
+                initUser();
+                
+                // 2. 初始化时间
+                initDateTime();
+                
+                // 3. 初始化数据
+                initData();
+                
+                // 4. 初始化界面
+                initUI();
+                
+                // 5. 开始定时任务
+                startTimers();
+                
+                // 6. 开始数据同步检查
+                startDataSync();
+                
+                showToast('✅ 系统就绪！', 'success');
+                
+            } catch (error) {
+                console.error('初始化失败:', error);
+                showToast('⚠️ 初始化失败', 'warning');
+            }
+        }
+
+        // 开始系统
+        function startSystem() {
+            document.getElementById('connectModal').classList.remove('show');
+            initSystem();
+        }
+
+        // 初始化用户
+        function initUser() {
+            // 从本地存储获取或生成用户信息
+            let userData = localStorage.getItem('assistant_user_data');
+            
+            if (userData) {
+                userData = JSON.parse(userData);
+                state.userId = userData.id;
+                state.userName = userData.name;
+                state.userColor = userData.color;
+            } else {
+                // 生成新用户
+                state.userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                
+                // 随机生成昵称和颜色
+                const names = ['管理员', '接待员', '分配员', '协调员', '值班员', '调度员', '指导员'];
+                state.userName = names[Math.floor(Math.random() * names.length)] + (Math.floor(Math.random() * 90) + 10);
+                
+                const colors = ['#4361ee', '#4cc9f0', '#f72585', '#7209b7', '#3a0ca3', '#4895ef', '#560bad'];
+                state.userColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                // 保存用户信息
+                localStorage.setItem('assistant_user_data', JSON.stringify({
+                    id: state.userId,
+                    name: state.userName,
+                    color: state.userColor
+                }));
+            }
+            
+            // 更新用户界面
+            document.getElementById('userName').textContent = state.userName;
+            document.getElementById('userAvatar').textContent = state.userName.charAt(0);
+            document.getElementById('userAvatar').style.background = state.userColor;
+            document.getElementById('userAvatar').style.color = 'white';
+            
+            console.log(`👤 用户: ${state.userName}`);
+        }
+
+        // 初始化时间
+        function initDateTime() {
+            const now = new Date();
+            
+            // 日期信息
+            state.today = now.toISOString().split('T')[0];
+            state.todayWeekday = now.getDay() || 7;
+            state.tomorrowWeekday = state.todayWeekday === 7 ? 1 : state.todayWeekday + 1;
+            state.isAfter14pm = now.getHours() >= 14;
+            
+            // 更新时间显示
+            updateDateTimeDisplay();
+            
+            // 获取明天休息的助教
+            updateTomorrowRestAssistants();
+        }
+
+        // 更新日期时间显示
+        function updateDateTimeDisplay() {
+            const now = new Date();
+            
+            // 时间
+            const timeStr = now.toLocaleTimeString('zh-CN');
+            document.getElementById('currentTime').textContent = timeStr;
+            
+            // 日期
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+            const weekday = WEEKDAYS[state.todayWeekday === 7 ? 0 : state.todayWeekday];
+            document.getElementById('currentDate').textContent = `${month}月${day}日 星期${weekday}`;
+            
+            // 模式指示器
+            const modeEl = document.getElementById('timeMode');
+            if (state.isAfter14pm) {
+                modeEl.innerHTML = '<div>🕒 14点后模式</div><div style="font-size: 0.8em;">跳过明日休息助教</div>';
+                modeEl.classList.add('active');
+            } else {
+                modeEl.innerHTML = '<div>🕐 正常分配模式</div><div style="font-size: 0.8em;">所有可用助教</div>';
+                modeEl.classList.remove('active');
+            }
+        }
+
+        // 获取明天休息的助教
+        function updateTomorrowRestAssistants() {
+            state.tomorrowRestAssistants = Object.keys(ASSISTANT_REST_DAYS).filter(name => {
+                return ASSISTANT_REST_DAYS[name].includes(state.tomorrowWeekday);
+            });
+        }
+
+        // 初始化数据
+        function initData() {
+            console.log('📂 初始化数据...');
+            
+            try {
+                // 尝试从本地存储加载
+                const localData = localStorage.getItem('assistant_system_data');
+                if (localData) {
+                    const data = JSON.parse(localData);
+                    
+                    // 检查是否是今天的数据
+                    if (data.date === state.today) {
+                        state.assignmentHistory = data.history || {};
+                        state.todayAssignments = data.assignments || [];
+                        state.todaySkips = data.skips || [];
+                        
+                        console.log('✅ 从本地存储加载数据成功');
+                    }
+                }
+                
+                // 确保所有助教都有历史记录
+                initAssistantHistory();
+                
+                // 更新可用助教
+                updateAvailableAssistants();
+                
+                // 更新显示
+                updateDisplay();
+                
+                // 更新在线用户（从共享存储）
+                updateOnlineUsersFromStorage();
+                
+            } catch (error) {
+                console.error('初始化数据失败:', error);
+                resetLocalData();
+            }
+        }
+
+        // 初始化助教历史记录
+        function initAssistantHistory() {
+            Object.keys(ASSISTANT_REST_DAYS).forEach(name => {
+                if (!state.assignmentHistory[name]) {
+                    state.assignmentHistory[name] = 0;
+                }
+            });
+        }
+
+        // 重置本地数据
+        function resetLocalData() {
+            state.assignmentHistory = {};
+            Object.keys(ASSISTANT_REST_DAYS).forEach(name => {
+                state.assignmentHistory[name] = 0;
+            });
+            state.todayAssignments = [];
+            state.todaySkips = [];
+        }
+
+        // 更新可用助教
+        function updateAvailableAssistants() {
+            // 基础可用（今天不休息）
+            let available = Object.keys(ASSISTANT_REST_DAYS).filter(name => {
+                return !ASSISTANT_REST_DAYS[name].includes(state.todayWeekday);
+            });
+            
+            // 移除今天被跳过的
+            const skippedToday = state.todaySkips.map(s => s.name);
+            available = available.filter(name => !skippedToday.includes(name));
+            
+            // 14点后移除明天休息的
+            if (state.isAfter14pm) {
+                available = available.filter(name => 
+                    !state.tomorrowRestAssistants.includes(name)
+                );
+            }
+            
+            // 按历史分配排序（公平分配）
+            available.sort((a, b) => {
+                return (state.assignmentHistory[a] || 0) - (state.assignmentHistory[b] || 0);
+            });
+            
+            state.availableAssistants = available;
+        }
+
+        // 从共享存储更新在线用户
+        function updateOnlineUsersFromStorage() {
+            try {
+                // 从共享存储获取在线用户数据
+                const sharedUsers = localStorage.getItem('assistant_online_users');
+                if (sharedUsers) {
+                    const users = JSON.parse(sharedUsers);
+                    const now = Date.now();
+                    
+                    // 过滤掉超过5分钟未活动的用户
+                    state.onlineUsers = {};
+                    for (const [userId, userData] of Object.entries(users)) {
+                        if (now - userData.lastSeen < 5 * 60 * 1000) { // 5分钟
+                            state.onlineUsers[userId] = userData;
+                        }
+                    }
+                    
+                    updateOnlineUsersDisplay();
+                }
+            } catch (error) {
+                console.error('更新在线用户失败:', error);
+            }
+        }
+
+        // 初始化界面
+        function initUI() {
+            // 绑定按钮事件
+            document.getElementById('assignBtn').addEventListener('click', assignAssistant);
+            document.getElementById('confirmBtn').addEventListener('click', confirmAssignment);
+            document.getElementById('skipBtn').addEventListener('click', skipAssistant);
+            document.getElementById('cancelBtn').addEventListener('click', cancelAction);
+            
+            // 绑定键盘事件
+            document.addEventListener('keydown', handleKeydown);
+            
+            console.log('✅ 界面初始化完成');
+        }
+
+        // 开始数据同步
+        function startDataSync() {
+            // 定期检查共享数据
+            setInterval(() => {
+                checkSharedData();
+                updateUserPresence();
+            }, 3000); // 每3秒检查一次
+        }
+
+        // 检查共享数据
+        function checkSharedData() {
+            try {
+                // 从共享存储检查是否有新数据
+                const sharedData = localStorage.getItem('assistant_shared_data');
+                if (sharedData) {
+                    const data = JSON.parse(sharedData);
+                    
+                    // 检查是否是今天的数据且比本地数据新
+                    if (data.date === state.today && data.timestamp > state.lastDataCheck) {
+                        // 合并分配记录
+                        const newAssignments = data.assignments || [];
+                        const localIds = new Set(state.todayAssignments.map(a => a.id));
+                        
+                        newAssignments.forEach(assignment => {
+                            if (!localIds.has(assignment.id)) {
+                                state.todayAssignments.unshift(assignment);
+                                
+                                // 更新分配历史
+                                state.assignmentHistory[assignment.name] = 
+                                    (state.assignmentHistory[assignment.name] || 0) + 1;
+                            }
+                        });
+                        
+                        // 合并跳过记录
+                        const newSkips = data.skips || [];
+                        const localSkipKeys = new Set(state.todaySkips.map(s => s.id));
+                        
+                        newSkips.forEach(skip => {
+                            if (!localSkipKeys.has(skip.id)) {
+                                state.todaySkips.unshift(skip);
+                            }
+                        });
+                        
+                        state.lastDataCheck = data.timestamp;
+                        
+                        // 更新可用助教和显示
+                        updateAvailableAssistants();
+                        updateDisplay();
+                        
+                        // 显示通知
+                        if (newAssignments.length > 0 || newSkips.length > 0) {
+                            showToast(`🔄 收到${newAssignments.length}条新分配，${newSkips.length}条新跳过`, 'info');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('检查共享数据失败:', error);
+            }
+        }
+
+        // 更新用户在线状态
+        function updateUserPresence() {
+            try {
+                // 更新自己的在线状态
+                const userPresence = {
+                    id: state.userId,
+                    name: state.userName,
+                    color: state.userColor,
+                    lastSeen: Date.now()
+                };
+                
+                // 获取当前在线用户
+                let onlineUsers = {};
+                const storedUsers = localStorage.getItem('assistant_online_users');
+                if (storedUsers) {
+                    onlineUsers = JSON.parse(storedUsers);
+                }
+                
+                // 更新自己的状态
+                onlineUsers[state.userId] = userPresence;
+                
+                // 清理超时用户（5分钟）
+                const now = Date.now();
+                for (const userId in onlineUsers) {
+                    if (now - onlineUsers[userId].lastSeen > 5 * 60 * 1000) {
+                        delete onlineUsers[userId];
+                    }
+                }
+                
+                // 保存回共享存储
+                localStorage.setItem('assistant_online_users', JSON.stringify(onlineUsers));
+                
+                // 更新本地状态
+                state.onlineUsers = onlineUsers;
+                updateOnlineUsersDisplay();
+                
+            } catch (error) {
+                console.error('更新用户在线状态失败:', error);
+            }
+        }
+
+        // ==================== 核心功能 ====================
+        // 分配助教
+        function assignAssistant() {
+            if (state.availableAssistants.length === 0) {
+                showToast('⚠️ 今天没有可用的助教！', 'warning');
+                return;
+            }
+            
+            // 找出分配最少的候选人
+            let minCount = Infinity;
+            let candidates = [];
+            
+            state.availableAssistants.forEach(name => {
+                const count = state.assignmentHistory[name] || 0;
+                if (count < minCount) {
+                    minCount = count;
+                    candidates = [name];
+                } else if (count === minCount) {
+                    candidates.push(name);
+                }
+            });
+            
+            // 随机选择一个
+            state.currentAssistant = candidates[Math.floor(Math.random() * candidates.length)];
+            state.isSelecting = true;
+            
+            // 显示结果
+            showAssistantResult();
+            
+            // 更新按钮状态
+            document.getElementById('assignBtn').disabled = true;
+            document.getElementById('confirmBtn').disabled = false;
+            document.getElementById('skipBtn').disabled = false;
+            document.getElementById('cancelBtn').style.display = 'flex';
+            
+            // 更新主面板状态
+            document.getElementById('mainPanel').classList.add('active');
+            
+            showToast(`🎯 已选择助教: ${state.currentAssistant}`, 'info');
+        }
+
+        // 显示助教结果
+        function showAssistantResult() {
+            const display = document.getElementById('assistantDisplay');
+            const message = document.getElementById('statusMessage');
+            
+            display.textContent = state.currentAssistant;
+            display.className = 'assistant-display';
+            
+            // 检查是否明天休息
+            const isTomorrowRest = state.tomorrowRestAssistants.includes(state.currentAssistant);
+            
+            if (isTomorrowRest && state.isAfter14pm) {
+                display.classList.add('tomorrow-rest');
+                message.innerHTML = '⚠️ <strong>注意：</strong>此助教明日休息，请确认是否分配';
+                message.style.color = '#f72585';
+            } else {
+                message.innerHTML = '请确认分配此助教，或点击跳过按钮';
+                message.style.color = '#4361ee';
+            }
+        }
+
+        // 确认分配
+        function confirmAssignment() {
+            if (!state.currentAssistant) return;
+            
+            try {
+                // 记录分配
+                const newCount = (state.assignmentHistory[state.currentAssistant] || 0) + 1;
+                state.assignmentHistory[state.currentAssistant] = newCount;
+                
+                const assignmentNumber = state.todayAssignments.length + 1;
+                
+                // 创建分配记录
+                const assignment = {
+                    id: Date.now().toString() + '_' + state.userId,
+                    time: new Date().toLocaleTimeString('zh-CN', { hour12: false }),
+                    name: state.currentAssistant,
+                    user: state.userName,
+                    userId: state.userId,
+                    number: assignmentNumber,
+                    timestamp: Date.now()
+                };
+                
+                state.todayAssignments.unshift(assignment);
+                
+                // 保存到共享存储
+                saveToSharedStorage(assignment, 'assignment');
+                
+                // 显示成功信息
+                const message = document.getElementById('statusMessage');
+                const display = document.getElementById('assistantDisplay');
+                
+                display.classList.add('selected');
+                message.innerHTML = `✅ <strong>分配成功！</strong> ${state.currentAssistant} 将指导第${assignmentNumber}位新生`;
+                message.style.color = '#4cc9f0';
+                
+                // 重置状态
+                resetSelection();
+                
+                // 更新数据并保存
+                updateAvailableAssistants();
+                updateDisplay();
+                saveLocalData();
+                
+                showToast(`✅ 已分配: ${state.currentAssistant}`, 'success');
+                
+            } catch (error) {
+                console.error('确认分配失败:', error);
+                showToast('⚠️ 保存分配记录失败', 'warning');
+            }
+        }
+
+        // 保存到共享存储
+        function saveToSharedStorage(data, type) {
+            try {
+                // 获取现有共享数据
+                let sharedData = {
+                    date: state.today,
+                    assignments: [],
+                    skips: [],
+                    timestamp: Date.now()
+                };
+                
+                const existingData = localStorage.getItem('assistant_shared_data');
+                if (existingData) {
+                    const parsed = JSON.parse(existingData);
+                    if (parsed.date === state.today) {
+                        sharedData = parsed;
+                    }
+                }
+                
+                // 添加新数据
+                if (type === 'assignment') {
+                    sharedData.assignments.unshift(data);
+                    // 只保留最近100条记录
+                    sharedData.assignments = sharedData.assignments.slice(0, 100);
+                } else if (type === 'skip') {
+                    sharedData.skips.unshift(data);
+                    // 只保留最近50条跳过记录
+                    sharedData.skips = sharedData.skips.slice(0, 50);
+                }
+                
+                sharedData.timestamp = Date.now();
+                
+                // 保存回共享存储
+                localStorage.setItem('assistant_shared_data', JSON.stringify(sharedData));
+                
+            } catch (error) {
+                console.error('保存到共享存储失败:', error);
+            }
+        }
+
+        // 跳过助教
+        function skipAssistant() {
+            if (!state.currentAssistant) return;
+            
+            if (!state.isSkipping) {
+                // 进入跳过模式
+                state.isSkipping = true;
+                state.isSelecting = false;
+                
+                // 显示原因输入框
+                document.getElementById('skipReason').style.display = 'block';
+                document.getElementById('skipReason').focus();
+                
+                // 更新按钮状态
+                document.getElementById('confirmBtn').disabled = true;
+                document.getElementById('skipBtn').textContent = '确认跳过';
+                document.getElementById('cancelBtn').textContent = '取消跳过';
+                
+                // 更新主面板状态
+                document.getElementById('mainPanel').classList.remove('active');
+                document.getElementById('mainPanel').classList.add('skipping');
+                
+                // 更新状态消息
+                document.getElementById('statusMessage').innerHTML = '请输入跳过原因（选填），然后点击确认跳过';
+                document.getElementById('statusMessage').style.color = '#f72585';
+                
+                return;
+            }
+            
+            // 执行跳过
+            const reason = document.getElementById('skipReason').value.trim();
+            executeSkip(reason);
+        }
+
+        // 执行跳过
+        function executeSkip(reason) {
+            try {
+                // 创建跳过记录
+                const skip = {
+                    id: Date.now().toString() + '_' + state.userId,
+                    time: new Date().toLocaleTimeString('zh-CN', { hour12: false }),
+                    name: state.currentAssistant,
+                    reason: reason || "无原因",
+                    user: state.userName,
+                    userId: state.userId,
+                    timestamp: Date.now()
+                };
+                
+                state.todaySkips.unshift(skip);
+                
+                // 保存到共享存储
+                saveToSharedStorage(skip, 'skip');
+                
+                // 显示跳过结果
+                const message = document.getElementById('statusMessage');
+                message.innerHTML = `⏸️ <strong>已跳过</strong> ${state.currentAssistant}${reason ? `，原因：${reason}` : ''}`;
+                message.style.color = '#7209b7';
+                
+                // 重置状态
+                resetSelection();
+                
+                // 更新数据并保存
+                updateAvailableAssistants();
+                updateDisplay();
+                saveLocalData();
+                
+                showToast(`⏸️ 已跳过: ${state.currentAssistant}`, 'warning');
+                
+            } catch (error) {
+                console.error('执行跳过失败:', error);
+                showToast('⚠️ 保存跳过记录失败', 'warning');
+            }
+        }
+
+        // 取消操作
+        function cancelAction() {
+            resetSelection();
+        }
+
+        // 重置选择状态
+        function resetSelection() {
+            state.currentAssistant = null;
+            state.isSelecting = false;
+            state.isSkipping = false;
+            
+            // 重置按钮
+            document.getElementById('assignBtn').disabled = false;
+            document.getElementById('confirmBtn').disabled = true;
+            document.getElementById('skipBtn').disabled = true;
+            document.getElementById('skipBtn').textContent = '跳过助教';
+            document.getElementById('cancelBtn').style.display = 'none';
+            document.getElementById('cancelBtn').textContent = '取消操作';
+            
+            // 隐藏原因输入框
+            document.getElementById('skipReason').style.display = 'none';
+            document.getElementById('skipReason').value = '';
+            
+            // 重置主面板
+            document.getElementById('mainPanel').className = 'main-panel';
+            
+            // 重置显示
+            document.getElementById('assistantDisplay').textContent = '-';
+            document.getElementById('assistantDisplay').className = 'assistant-display';
+            document.getElementById('statusMessage').innerHTML = '点击"分配助教"按钮开始';
+            document.getElementById('statusMessage').style.color = '#666';
+        }
+
+        // ==================== 界面更新 ====================
+        // 更新显示
+        function updateDisplay() {
+            // 统计数据
+            document.getElementById('assignedCount').textContent = state.todayAssignments.length;
+            document.getElementById('availableCount').textContent = state.availableAssistants.length;
+            document.getElementById('skippedCount').textContent = state.todaySkips.length;
+            
+            // 计算公平指数
+            document.getElementById('fairnessIndex').textContent = calculateFairness() + '%';
+            
+            // 更新标签徽章
+            document.getElementById('historyBadge').textContent = state.todayAssignments.length;
+            document.getElementById('onlineBadge').textContent = Object.keys(state.onlineUsers).length || 1;
+            
+            // 更新记录列表
+            updateHistoryList();
+            
+            // 更新助教状态网格
+            updateAssistantGrid();
+        }
+
+        // 计算公平指数
+        function calculateFairness() {
+            if (state.availableAssistants.length === 0) return 0;
+            
+            const counts = state.availableAssistants.map(name => 
+                state.assignmentHistory[name] || 0
+            );
+            
+            const min = Math.min(...counts);
+            const max = Math.max(...counts);
+            
+            if (max === 0) return 100;
+            return Math.round((1 - (max - min) / (max || 1)) * 100);
+        }
+
+        // 更新历史记录列表
+        function updateHistoryList() {
+            const historyList = document.getElementById('historyList');
+            
+            if (state.todayAssignments.length === 0 && state.todaySkips.length === 0) {
+                historyList.innerHTML = '<div style="text-align: center; color: #999; padding: 40px;">暂无记录</div>';
+                return;
+            }
+            
+            // 合并所有记录并按时间倒序
+            const allRecords = [
+                ...state.todayAssignments.map(a => ({ ...a, type: '分配' })),
+                ...state.todaySkips.map(s => ({ ...s, type: '跳过' }))
+            ].sort((a, b) => {
+                return (b.timestamp || 0) - (a.timestamp || 0);
+            }).slice(0, 50); // 只显示最近50条
+            
+            let html = '';
+            allRecords.forEach(record => {
+                if (record.type === '分配') {
+                    html += `
+                    <div class="history-item">
+                        <div class="history-time">${record.time}</div>
+                        <div class="history-action">
+                            <strong>${record.name}</strong> → 第${record.number}位新生
+                        </div>
+                        <div class="history-user">${record.user}</div>
+                    </div>`;
+                } else {
+                    html += `
+                    <div class="history-item" style="color: #7209b7;">
+                        <div class="history-time">${record.time}</div>
+                        <div class="history-action">
+                            <s><strong>${record.name}</strong></s>（跳过）${record.reason ? `：${record.reason}` : ''}
+                        </div>
+                        <div class="history-user">${record.user}</div>
+                    </div>`;
+                }
+            });
+            
+            historyList.innerHTML = html;
+        }
+
+        // 更新助教状态网格
+        function updateAssistantGrid() {
+            const grid = document.getElementById('assistantGrid');
+            
+            let html = '';
+            Object.keys(ASSISTANT_REST_DAYS).forEach(name => {
+                // 确定助教状态
+                let status = 'available';
+                let statusText = '可用';
+                
+                // 检查今天是否休息
+                if (ASSISTANT_REST_DAYS[name].includes(state.todayWeekday)) {
+                    status = 'unavailable';
+                    statusText = '休息';
+                }
+                // 检查是否被跳过
+                else if (state.todaySkips.some(s => s.name === name)) {
+                    status = 'skipped';
+                    statusText = '已跳过';
+                }
+                // 检查是否明天休息（仅14点后显示）
+                else if (state.isAfter14pm && state.tomorrowRestAssistants.includes(name)) {
+                    status = 'tomorrow-rest';
+                    statusText = '明日休';
+                }
+                
+                const count = state.assignmentHistory[name] || 0;
+                
+                html += `
+                <div class="assistant-card ${status}">
+                    <div class="assistant-name">${name}</div>
+                    <div style="color: #666; font-size: 0.9em; margin: 5px 0;">${statusText}</div>
+                    <div class="assistant-count">已带: ${count}人</div>
+                </div>`;
+            });
+            
+            grid.innerHTML = html;
+        }
+
+        // 更新在线用户显示
+        function updateOnlineUsersDisplay() {
+            const onlineUsersEl = document.getElementById('onlineUsers');
+            const users = Object.values(state.onlineUsers);
+            
+            if (users.length === 0) {
+                onlineUsersEl.innerHTML = '<div style="color: #999; text-align: center; padding: 20px;">暂无其他在线用户</div>';
+                return;
+            }
+            
+            let html = '';
+            users.forEach(user => {
+                const lastSeen = user.lastSeen || Date.now();
+                const minutesAgo = Math.floor((Date.now() - lastSeen) / 60000);
+                let statusText = '在线';
+                
+                if (minutesAgo > 1) {
+                    statusText = `${minutesAgo}分钟前`;
+                }
+                
+                html += `
+                <div class="online-user">
+                    <div class="user-status" style="background: ${user.color || '#4361ee'}"></div>
+                    <span>${user.name}</span>
+                    <span style="color: #666; font-size: 0.85em;">(${statusText})</span>
+                </div>`;
+            });
+            
+            onlineUsersEl.innerHTML = html;
+        }
+
+        // ==================== 辅助功能 ====================
+        // 显示通知
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast';
+            
+            switch(type) {
+                case 'success':
+                    toast.style.background = '#4cc9f0';
+                    break;
+                case 'warning':
+                    toast.style.background = '#f72585';
+                    break;
+                case 'error':
+                    toast.style.background = '#7209b7';
+                    break;
+                default:
+                    toast.style.background = '#4361ee';
+            }
+            
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 保存本地数据
+        function saveLocalData() {
+            try {
+                const data = {
+                    date: state.today,
+                    history: state.assignmentHistory,
+                    assignments: state.todayAssignments,
+                    skips: state.todaySkips,
+                    lastUpdated: new Date().toISOString()
+                };
+                
+                localStorage.setItem('assistant_system_data', JSON.stringify(data));
+            } catch (error) {
+                console.error('保存本地数据失败:', error);
+            }
+        }
+
+        // 键盘快捷键
+        function handleKeydown(event) {
+            switch(event.key) {
+                case ' ': // 空格键分配
+                    event.preventDefault();
+                    if (!state.isSelecting && !state.isSkipping) {
+                        assignAssistant();
+                    }
+                    break;
+                case 'Enter': // 回车确认
+                    if (state.isSelecting && !state.isSkipping) {
+                        confirmAssignment();
+                    } else if (state.isSkipping) {
+                        const reason = document.getElementById('skipReason').value.trim();
+                        executeSkip(reason);
+                    }
+                    break;
+                case 'Escape': // ESC取消
+                    if (state.isSelecting || state.isSkipping) {
+                        cancelAction();
+                    }
+                    break;
+            }
+        }
+
+        // 开始定时器
+        function startTimers() {
+            // 每秒更新时间
+            setInterval(updateDateTimeDisplay, 1000);
+            
+            // 每分钟检查时间规则
+            setInterval(() => {
+                const now = new Date();
+                const wasAfter14pm = state.isAfter14pm;
+                state.isAfter14pm = now.getHours() >= 14;
+                
+                if (wasAfter14pm !== state.isAfter14pm) {
+                    updateDateTimeDisplay();
+                    updateAvailableAssistants();
+                    updateDisplay();
+                    
+                    if (state.isAfter14pm) {
+                        showToast('🕒 下午14点后，已自动跳过明日休息的助教', 'info');
+                    }
+                }
+            }, 60000);
+        }
+
+        // 刷新数据
+        function refreshData() {
+            showToast('🔄 正在刷新数据...', 'info');
+            initData();
+            showToast('✅ 数据已刷新', 'success');
+        }
+
+        // 重置今日数据
+        function resetToday() {
+            if (confirm('确定要重置今日的所有数据吗？此操作不可撤销！')) {
+                resetLocalData();
+                saveLocalData();
+                updateAvailableAssistants();
+                updateDisplay();
+                showToast('✅ 今日数据已重置', 'success');
+            }
+        }
+
+        // 导出数据
+        function exportData() {
+            const data = {
+                date: state.today,
+                assignments: state.todayAssignments,
+                skips: state.todaySkips,
+                history: state.assignmentHistory,
+                exportedAt: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `助教分配数据_${state.today}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showToast('📥 数据已导出', 'success');
+        }
+
+        // 清除所有数据
+        function clearAllData() {
+            if (confirm('确定要清除所有数据吗？包括用户信息和历史记录！此操作不可撤销！')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // 切换标签页
+        function switchTab(tabName) {
+            // 更新标签样式
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 激活选中的标签
+            const tab = document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`);
+            if (tab) tab.classList.add('active');
+            
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+            
+            // 如果切换到在线用户标签，更新显示
+            if (tabName === 'online') {
+                updateOnlineUsersDisplay();
+            }
+        }
+
+        // 页面加载完成后显示连接模态框
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('connectModal').classList.add('show');
+        });
+    </script>
+</body>
+</html>
